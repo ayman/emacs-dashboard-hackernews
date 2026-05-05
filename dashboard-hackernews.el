@@ -92,8 +92,25 @@
      (dotimes (i list-size)
        (dashboard-hackernews-get-item
         (elt ids i) (lambda (item) (push item dashboard-hackernews-items))))))
-  (dashboard-hackernews-insert-list "Hackernews:"
-                                    (dashboard-subseq dashboard-hackernews-items list-size)))
+  (if (and (fboundp 'dashboard-insert-section)
+           (eq (car-safe (symbol-function 'dashboard-insert-section)) 'macro))
+      (dashboard-insert-section
+       "Hackernews:"
+       (mapcar (lambda (story)
+                 (propertize (format "[%3d] %s"
+                                     (alist-get 'score story)
+                                     (decode-coding-string (alist-get 'title story) 'utf-8))
+                             'dashboard-url (alist-get 'url story)))
+               dashboard-hackernews-items)
+       list-size
+       'hackernews
+       (dashboard-get-shortcut 'hackernews)
+       `(lambda (&rest _)
+          (let ((url (get-text-property 0 'dashboard-url ,el)))
+            (when url (browse-url url))))
+       el)
+    (dashboard-hackernews-insert-list "Hackernews:"
+                                      (dashboard-subseq dashboard-hackernews-items list-size))))
 
 (provide 'dashboard-hackernews)
 ;;; dashboard-hackernews.el ends here
